@@ -1,0 +1,119 @@
+{
+  "info": {
+    "name": "DataStorm API",
+    "description": "QA pass for the live /posts endpoints (Sprint 10, Track B)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:5000" },
+    { "key": "postId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Create Post",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"QA Test Post\",\n  \"content\": \"Checking persistence to Atlas\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/posts", "host": ["{{base_url}}"], "path": ["posts"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Status is 201', () => pm.response.to.have.status(201));",
+            "const body = pm.response.json();",
+            "pm.test('Response has an _id', () => pm.expect(body._id).to.exist);",
+            "pm.collectionVariables.set('postId', body._id);"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "2. Get All Posts",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/posts", "host": ["{{base_url}}"], "path": ["posts"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Response is an array', () => pm.expect(pm.response.json()).to.be.an('array'));"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "3. Get Post By ID",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/posts/{{postId}}", "host": ["{{base_url}}"], "path": ["posts", "{{postId}}"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Returned id matches requested id', () => pm.expect(pm.response.json()._id).to.eql(pm.collectionVariables.get('postId')));"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "4. Update Post",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"QA Test Post (Updated)\"\n}"
+        },
+        "url": { "raw": "{{base_url}}/posts/{{postId}}", "host": ["{{base_url}}"], "path": ["posts", "{{postId}}"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+            "pm.test('Title was updated', () => pm.expect(pm.response.json().title).to.eql('QA Test Post (Updated)'));"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "5. Delete Post",
+      "request": {
+        "method": "DELETE",
+        "url": { "raw": "{{base_url}}/posts/{{postId}}", "host": ["{{base_url}}"], "path": ["posts", "{{postId}}"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Status is 200', () => pm.response.to.have.status(200));"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "6. Get Deleted Post (expect 404)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{base_url}}/posts/{{postId}}", "host": ["{{base_url}}"], "path": ["posts", "{{postId}}"] }
+      },
+      "event": [{
+        "listen": "test",
+        "script": {
+          "exec": [
+            "pm.test('Status is 404 after deletion', () => pm.response.to.have.status(404));"
+          ]
+        }
+      }]
+    }
+  ]
+}
