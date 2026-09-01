@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Post = require('./Post');
+const Post = require('./models/Post');
 
 router.post('/', async (req, res) => {
   try {
@@ -14,7 +14,8 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
-    const posts = await Post.find();
+    // Hydrates authorId into the full User document, not just the raw ref
+    const posts = await Post.find().populate('authorId');
     res.json(posts);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findById(req.params.id).populate('authorId');
     if (!post) return res.status(404).json({ error: 'Post not found' });
     res.json(post);
   } catch (error) {
