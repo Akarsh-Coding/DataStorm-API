@@ -22,6 +22,16 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Must come before /:id — otherwise Express treats "recent" as an :id value
+router.get('/recent', async (req, res) => {
+  try {
+    const posts = await Post.find().sort({ createdAt: -1 }).limit(3).populate('authorId');
+    res.json(posts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const post = await Post.findById(req.params.id).populate('authorId');
