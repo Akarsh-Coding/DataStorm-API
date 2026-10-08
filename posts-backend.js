@@ -1,15 +1,49 @@
 const express = require('express');
+const multer = require('multer');
 const router = express.Router();
 const Post = require('./models/Post');
+const { streamUpload } = require('./config/cloudinary');
 
-router.post('/', async (req, res) => {
+// Memory storage — the file buffer never touches disk, it's held in memory just
+// long enough to stream straight to Cloudinary. Nothing binary ever reaches MongoDB.
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed'));
+    }
+    cb(null, true);
+  },
+});
+
+// upload.single('image') only activates for multipart/form-data requests — a plain
+// JSON POST (Content-Type: application/json) passes straight through untouched,
+// so this route still works exactly as before when no image is attached.
+router.post('/', upload.single('image'), async (req, res) => {
   try {
-    const post = await Post.create(req.body);
+    const payload = { ...req.body };
+
+    if (req.file) {
+      const result = await streamUpload(req.file.buffer);
+      payload.moviePoster = result.secure_url; // only the URL is stored, never the file itself
+    }
+
+    const post = await Post.create(payload);
     res.status(201).json(post);
   } catch (error) {
     // 400: bad payload, not a server fault
     res.status(400).json({ error: error.message });
   }
+});
+
+// Catches multer-specific failures (oversized file, wrong type) so they come back
+// as a clean JSON 400 instead of Express's default HTML error page.
+router.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError || err.message === 'Only image files are allowed') {
+    return res.status(400).json({ error: err.message });
+  }
+  next(err);
 });
 
 router.get('/', async (req, res) => {
