@@ -78,8 +78,9 @@ router.get('/:id', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
-    // new: true returns the post after the update, not before
-    const post = await Post.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    // new: true returns the post after the update, not before.
+    // runValidators makes the schema's rules (rating 1-10, status enum) apply to updates too.
+    const post = await Post.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
     if (!post) return res.status(404).json({ error: 'Post not found' });
     res.json(post);
   } catch (error) {
