@@ -7,15 +7,19 @@ const usersRouter = require('./routes/users');
 
 const app = express();
 
+// In production, set CLIENT_ORIGIN on Render to your live frontend URL
+// (e.g. https://cinestream-zeq2.onrender.com or your Vercel domain).
+// Falls back to the local CineStream dev server when unset.
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+
 app.use(cors({
-  origin: 'http://localhost:5173', // CineStream's Vite dev server
+  origin: CLIENT_ORIGIN,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
 
 app.use(express.json());
 
-// Establish the Atlas connection before the server starts serving requests
 connectDB();
 
 app.get('/', (req, res) => {
